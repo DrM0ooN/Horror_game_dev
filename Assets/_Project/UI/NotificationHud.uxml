@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:Style src="project://database/Assets/_Project/UI/NotificationHud.uss" />
+    <ui:VisualElement name="root" picking-mode="Ignore" class="hud-root">
+        <ui:Label name="interact-prompt" text="" class="interact-prompt hud-hidden" />
+        <ui:Label name="toast" text="" class="toast hud-hidden" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,4 +1,14 @@
 ﻿<Solution>
-  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="PhotonVoice.API.csproj" />
+  <Project Path="Fusion.Unity.Editor.csproj" />
+  <Project Path="PhotonRealtime.csproj" />
+  <Project Path="PhotonVoice.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Fusion.Unity.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="PhotonChat.csproj" />
+  <Project Path="MicAmplifierEditor.Editor.csproj" />
+  <Project Path="Voice.FMOD.Editor.csproj" />
+  <Project Path="PhotonVoice.Editor.csproj" />
+  <Project Path="PhotonVoice.Utilities.Editor.csproj" />
 </Solution>
