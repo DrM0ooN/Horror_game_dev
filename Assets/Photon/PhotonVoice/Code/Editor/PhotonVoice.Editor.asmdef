@@ -1,7 +1,7 @@
 {
     "name": "PhotonVoice.Editor",
     "references": [
-        "PhotonRealtime",
+        "Photon.Realtime",
         "PhotonVoice",
         "PhotonVoice.API"
     ],

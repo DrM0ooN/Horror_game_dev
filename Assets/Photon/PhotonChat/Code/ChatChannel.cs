@@ -4,18 +4,18 @@
 // <copyright company="Exit Games GmbH">Photon Chat Api - Copyright (C) 2014 Exit Games GmbH</copyright>
 // ----------------------------------------------------------------------------------------------------------------------
 
-#if UNITY_4_7 || UNITY_5 || UNITY_5_3_OR_NEWER
+#if UNITY_2017_4_OR_NEWER
 #define SUPPORTED_UNITY
 #endif
+
 
 namespace Photon.Chat
 {
     using System.Collections.Generic;
     using System.Text;
 
-    #if SUPPORTED_UNITY || NETFX_CORE
-    using Hashtable = ExitGames.Client.Photon.Hashtable;
-    using SupportClass = ExitGames.Client.Photon.SupportClass;
+    #if SUPPORTED_UNITY
+    using SupportClass = Photon.Client.SupportClass;
     #endif
 
 
@@ -51,14 +51,12 @@ namespace Photon.Chat
         /// <summary>Count of messages this client still buffers/knows for this channel.</summary>
         public int MessageCount { get { return this.Messages.Count; } }
 
-        /// <summary>
-        /// ID of the last message received.
-        /// </summary>
+        /// <summary>ID of the last message received.</summary>
         public int LastMsgId { get; protected set; }
 
         private Dictionary<object, object> properties;
 
-        /// <summary>Whether or not this channel keeps track of the list of its subscribers.</summary>
+        /// <summary>True if this channel publishes/broadcasts a list of subscribers.</summary>
         public bool PublishSubscribers { get; protected set; }
 
         /// <summary>Maximum number of channel subscribers. 0 means infinite.</summary>
@@ -67,8 +65,10 @@ namespace Photon.Chat
         /// <summary>Subscribed users.</summary>
         public readonly HashSet<string> Subscribers = new HashSet<string>();
 
+        #pragma warning disable CS0649
         /// <summary> Properties of subscribers </summary>
         private Dictionary<string, Dictionary<object, object>> usersProperties;
+        #pragma warning restore
 
         /// <summary>Used internally to create new channels. This does NOT create a channel on the server! Use ChatClient.Subscribe.</summary>
         public ChatChannel(string name)

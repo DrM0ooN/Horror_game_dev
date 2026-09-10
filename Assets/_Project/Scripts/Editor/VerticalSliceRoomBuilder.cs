@@ -55,7 +55,10 @@ namespace HorrorGame.EditorTools
             public Material Button;
             public Material Fragment;
             public Material Monster;
+            public Material MonsterDebugGlow;
             public Material ThreatStep;
+            public Material ProgressOrbUnlit;
+            public Material ProgressOrbLit;
             public Material Furniture;
         }
 
@@ -81,12 +84,18 @@ namespace HorrorGame.EditorTools
             BuildNotificationHud(root);
             Debug.Log("[VerticalSliceRoomBuilder] Notification HUD wired.");
 
+            BuildDebugTools(root);
+            Debug.Log("[VerticalSliceRoomBuilder] Debug tools wired (K toggles DebugMode: brighter ambient, monster glow visible).");
+
             var hubThreatSystem = BuildHubThreatSystem(root, palette);
             Debug.Log("[VerticalSliceRoomBuilder] HubThreatSystem + ThreatIndicatorView wired.");
 
+            var progressSystem = BuildMiniGameProgressSystem(root, palette);
+            Debug.Log("[VerticalSliceRoomBuilder] MiniGameProgressSystem + progress orbs wired.");
+
             var hubRespawnPoint = BuildHubRespawnPoint(root);
 
-            var monsterSwitcher = BuildRoom(root, palette, hubThreatSystem, hubRespawnPoint);
+            var monsterSwitcher = BuildRoom(root, palette, hubThreatSystem, progressSystem, hubRespawnPoint);
             Debug.Log("[VerticalSliceRoomBuilder] Challenge room (walls, door, button, flashlight mini-game) built and wired.");
 
             WirePlayer(monsterSwitcher);
@@ -107,7 +116,15 @@ private static Palette BuildPalette()
                 Button = CreateMaterial(new Color(0.85f, 0.6f, 0.2f), new Color(0.5f, 0.3f, 0.05f)),
                 Fragment = CreateMaterial(new Color(0.95f, 0.78f, 0.3f), new Color(0.9f, 0.6f, 0.15f)),
                 Monster = CreateMaterial(new Color(0.05f, 0.02f, 0.02f)),
+                // Testing aid, not final art -- whole-body glow (deep red, less orange than the
+                // first pass) so the placeholder monster is easy to spot in the dark, toggleable
+                // off via FlashlightMonsterSwitcher.
+                MonsterDebugGlow = CreateMaterial(new Color(0.4f, 0.04f, 0.02f), new Color(2.8f, 0.12f, 0.05f)),
                 ThreatStep = CreateMaterial(new Color(0.55f, 0.1f, 0.05f), new Color(0.4f, 0.05f, 0.02f)),
+                // Dormant "crystal" look -- cool, dark, slightly bluish-grey, deliberately unlike
+                // the rest of the hub's warm amber palette so a lit orb reads as a clear state change.
+                ProgressOrbUnlit = CreateMaterial(new Color(0.09f, 0.11f, 0.13f)),
+                ProgressOrbLit = CreateMaterial(new Color(0.15f, 0.55f, 0.32f), new Color(0.25f, 1.4f, 0.55f)),
                 Furniture = CreateMaterial(new Color(0.2f, 0.14f, 0.09f), texturePath: "Assets/_Project/Art/Textures/Furniture_Texture.png", textureTiling: new Vector2(2f, 2f)),
             };
         }
@@ -236,6 +253,67 @@ private static HubThreatSystem BuildHubThreatSystem(Transform root, Palette pale
             return hubThreatSystem;
         }
 
+        private static MiniGameProgressSystem BuildMiniGameProgressSystem(Transform root, Palette palette)
+        {
+            var systemGo = new GameObject("MiniGameProgressSystem");
+            systemGo.transform.SetParent(root, false);
+            var progressSystem = systemGo.AddComponent<MiniGameProgressSystem>();
+
+            var indicatorGo = new GameObject("ProgressIndicator");
+            indicatorGo.transform.SetParent(systemGo.transform, false);
+            // Mounted against the hub's west wall (the left side facing into the hub from the
+            // challenge room's doorway) so the four orbs read as a fixture on that wall.
+            indicatorGo.transform.localPosition = new Vector3(-HubHalfWidth + 0.35f, 2f, HubCenter.z);
+            var indicatorView = indicatorGo.AddComponent<MiniGameProgressIndicatorView>();
+
+            // Soft neutral-white fill so the dormant (dark, unlit) orbs actually read as "four
+            // orbs waiting" in the hub's otherwise near-black ambient, not just once one lights up.
+            // Deliberately neutral rather than the hub's warm palette -- a warm tint would muddy
+            // both the dormant grey-blue and the lit green into the same brownish smear.
+            var fillLightGo = new GameObject("ProgressIndicatorFillLight");
+            fillLightGo.transform.SetParent(indicatorGo.transform, false);
+            fillLightGo.transform.localPosition = new Vector3(0.5f, 1f, 0f);
+            var fillLight = fillLightGo.AddComponent<Light>();
+            fillLight.type = LightType.Point;
+            fillLight.color = Color.white;
+            fillLight.useColorTemperature = true;
+            fillLight.colorTemperature = 5200f;
+            fillLight.intensity = 1.2f;
+            fillLight.range = 4.5f;
+
+            const int orbCount = 4;
+            const float orbDiameter = 0.45f;
+            const float orbSpacing = 1.2f;
+            var orbs = new MiniGameProgressOrb[orbCount];
+            for (var i = 0; i < orbCount; i++)
+            {
+                var localZ = (i - (orbCount - 1) / 2f) * orbSpacing;
+                var orbGo = CreateSphere($"ProgressOrb_{i + 1}", indicatorGo.transform, new Vector3(0f, 0f, localZ), orbDiameter, palette.ProgressOrbUnlit);
+
+                var lightGo = new GameObject("GlowLight");
+                lightGo.transform.SetParent(orbGo.transform, false);
+                var glowLight = lightGo.AddComponent<Light>();
+                glowLight.type = LightType.Point;
+                glowLight.color = new Color(0.35f, 1f, 0.55f);
+                glowLight.intensity = 1.5f;
+                glowLight.range = 2.5f;
+
+                var orb = orbGo.AddComponent<MiniGameProgressOrb>();
+                SetObjectField(orb, "orbRenderer", orbGo.GetComponent<MeshRenderer>());
+                SetObjectField(orb, "unlitMaterial", palette.ProgressOrbUnlit);
+                SetObjectField(orb, "litMaterial", palette.ProgressOrbLit);
+                SetObjectField(orb, "glowLight", glowLight);
+
+                orbs[i] = orb;
+            }
+
+            SetObjectArrayField(indicatorView, "progressOrbs", orbs);
+            SetObjectField(progressSystem, "indicatorView", indicatorView);
+            SetIntField(progressSystem, "totalRooms", orbCount);
+
+            return progressSystem;
+        }
+
 private static Transform BuildHubRespawnPoint(Transform root)
         {
             var go = new GameObject("HubRespawnPoint");
@@ -245,7 +323,7 @@ private static Transform BuildHubRespawnPoint(Transform root)
             return go.transform;
         }
 
-        private static FlashlightMonsterSwitcher BuildRoom(Transform root, Palette palette, HubThreatSystem hubThreatSystem, Transform hubRespawnPoint)
+        private static FlashlightMonsterSwitcher BuildRoom(Transform root, Palette palette, HubThreatSystem hubThreatSystem, MiniGameProgressSystem progressSystem, Transform hubRespawnPoint)
         {
             var roomGo = new GameObject("ChallengeRoom_Flashlight");
             roomGo.transform.SetParent(root, false);
@@ -257,6 +335,7 @@ private static Transform BuildHubRespawnPoint(Transform root)
             var doorController = BuildDoor(roomGo.transform, palette);
             var startButton = BuildStartButton(roomGo.transform, palette);
             var monsterSwitcher = BuildMonster(roomGo.transform, palette);
+            var fragmentSpawnPoints = BuildFragmentSpawnPoints(roomGo.transform);
             var fragments = BuildFragments(roomGo.transform, palette);
             BuildLights(roomGo.transform);
 
@@ -264,6 +343,7 @@ private static Transform BuildHubRespawnPoint(Transform root)
             miniGameGo.transform.SetParent(roomGo.transform, false);
             var miniGame = miniGameGo.AddComponent<FlashlightMiniGame>();
             SetObjectArrayField(miniGame, "fragments", fragments);
+            SetObjectArrayField(miniGame, "fragmentSpawnPoints", fragmentSpawnPoints);
             SetObjectField(miniGame, "monsterSwitcher", monsterSwitcher);
             SetObjectField(miniGame, "hubThreatSystem", hubThreatSystem);
 
@@ -276,6 +356,7 @@ private static Transform BuildHubRespawnPoint(Transform root)
             SetObjectField(roomController, "doorController", doorController);
             SetObjectField(roomController, "miniGameBehaviour", miniGame);
             SetObjectField(roomController, "hubThreatSystem", hubThreatSystem);
+            SetObjectField(roomController, "progressSystem", progressSystem);
             SetObjectArrayField(roomController, "hubRespawnPoints", new Object[] { hubRespawnPoint });
 
             SetObjectField(startButton, "roomController", roomController);
@@ -389,6 +470,13 @@ private static void BuildNotificationHud(Transform root)
             hudGo.AddComponent<NotificationHud>();
         }
 
+        private static void BuildDebugTools(Transform root)
+        {
+            var debugToolsGo = new GameObject("DebugTools");
+            debugToolsGo.transform.SetParent(root, false);
+            debugToolsGo.AddComponent<DebugModeHotkey>();
+            debugToolsGo.AddComponent<DebugLightingOverride>();
+        }
 
         private static GameObject CreateSphere(string name, Transform parent, Vector3 localPosition, float diameter, Material material)
         {
@@ -465,67 +553,105 @@ private static FlashlightMonsterSwitcher BuildMonster(Transform roomRoot, Palett
             var anchorsGo = new GameObject("MonsterAnchors");
             anchorsGo.transform.SetParent(roomRoot, false);
 
-            // Anchor positions are expressed as fractions of RoomHalfWidth/RoomHalfDepth (carried
-            // over from the original 6x7m layout: ~73% out to the side walls, ~74% toward the north
-            // wall for the front pair, ~66% toward the south/doorway wall for the back one) so they
-            // scale proportionally with the room footprint instead of floating at old fixed offsets.
-            var anchorPositions = new[]
+            // 15 static teleport spots (5 x-columns * 3 z-rows, as fractions of RoomHalfWidth/
+            // RoomHalfDepth so they scale proportionally if the room footprint changes again) --
+            // one is picked at random each time the monster switches. Kept at a consistent grounded
+            // height (1.2m, same as the original 3 anchors) -- unlike the fragment spawn points, the
+            // user asked for 3D height variety only on fragments, not the monster.
+            var anchorXFractions = new[] { -0.8f, -0.45f, -0.1f, 0.25f, 0.6f };
+            var anchorZFractions = new[] { -0.75f, -0.1f, 0.55f };
+            var anchors = new Object[anchorXFractions.Length * anchorZFractions.Length];
+            var anchorIndex = 0;
+            foreach (var zFrac in anchorZFractions)
             {
-                new Vector3(-RoomHalfWidth * 0.7333f, 1.2f, RoomHalfDepth * 0.7429f),
-                new Vector3(RoomHalfWidth * 0.7333f, 1.2f, RoomHalfDepth * 0.7429f),
-                new Vector3(0f, 1.2f, -RoomHalfDepth * 0.6571f),
-            };
-            var anchors = new Object[anchorPositions.Length];
-            for (var i = 0; i < anchorPositions.Length; i++)
-            {
-                var anchorGo = new GameObject($"MonsterAnchor_{i + 1}");
-                anchorGo.transform.SetParent(anchorsGo.transform, false);
-                anchorGo.transform.localPosition = anchorPositions[i];
-                anchors[i] = anchorGo.transform;
+                foreach (var xFrac in anchorXFractions)
+                {
+                    var anchorGo = new GameObject($"MonsterAnchor_{anchorIndex + 1}");
+                    anchorGo.transform.SetParent(anchorsGo.transform, false);
+                    anchorGo.transform.localPosition = new Vector3(RoomHalfWidth * xFrac, 1.2f, RoomHalfDepth * zFrac);
+                    anchors[anchorIndex] = anchorGo.transform;
+                    anchorIndex++;
+                }
             }
 
             var monsterGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             monsterGo.name = "Monster_Placeholder";
             monsterGo.transform.SetParent(roomRoot, false);
+            // "A little smaller" per explicit request -- was a full-scale (1,1,1) default capsule.
+            monsterGo.transform.localScale = Vector3.one * 0.8f;
             monsterGo.GetComponent<MeshRenderer>().sharedMaterial = palette.Monster;
             monsterGo.GetComponent<CapsuleCollider>().isTrigger = true;
 
             var monsterSwitcher = monsterGo.AddComponent<FlashlightMonsterSwitcher>();
             SetObjectArrayField(monsterSwitcher, "anchors", anchors);
             SetIntField(monsterSwitcher, "startingAnchorIndex", 0);
+            // Testing aid so the placeholder capsule is easy to spot in the dark -- swaps the whole
+            // body to a glowing orange-red material (small embedded "eye" spheres tried previously
+            // were occluded by the capsule's own surface and effectively invisible). Toggleable off
+            // via FlashlightMonsterSwitcher's debugGlowVisible field once no longer needed.
+            SetObjectField(monsterSwitcher, "bodyRenderer", monsterGo.GetComponent<MeshRenderer>());
+            SetObjectField(monsterSwitcher, "normalMaterial", palette.Monster);
+            SetObjectField(monsterSwitcher, "debugGlowMaterial", palette.MonsterDebugGlow);
 
             return monsterSwitcher;
         }
 
-private static Object[] BuildFragments(Transform roomRoot, Palette palette)
+private static Object[] BuildFragmentSpawnPoints(Transform roomRoot)
         {
-            // Positions are expressed as fractions of RoomHalfWidth/RoomHalfDepth (carried over
-            // from the original 6x7m layout: ~67% out toward the side walls, ~66% toward the
-            // north/south walls for the four corner-ish fragments, ~80% toward the north wall for
-            // the fifth) so they scale proportionally with the room footprint instead of floating
-            // clustered near the center of the much bigger room.
-            var fragmentPositions = new[]
+            // 15 static candidate spots (5 x-columns * 3 z-rows, as fractions of RoomHalfWidth/
+            // RoomHalfDepth) -- FlashlightMiniGame randomly picks 5 of these each run/retry and
+            // moves the fragments there. Heights are deliberately mixed (not all floor-level) per
+            // explicit request so pickups sometimes sit up on furniture/shelves rather than always
+            // on the floor -- roughly half around 1.0-1.1m, the rest spread 1.6-2.2m, well clear of
+            // the 6.5m ceiling.
+            var columns = new[] { -0.75f, -0.4f, 0f, 0.4f, 0.75f };
+            var rows = new[] { -0.65f, 0f, 0.65f };
+            var heightsByRow = new[]
             {
-                new Vector3(-RoomHalfWidth * 0.6667f, 1f, -RoomHalfDepth * 0.6571f),
-                new Vector3(RoomHalfWidth * 0.6667f, 1f, -RoomHalfDepth * 0.6571f),
-                new Vector3(-RoomHalfWidth * 0.6667f, 1f, RoomHalfDepth * 0.6571f),
-                new Vector3(RoomHalfWidth * 0.6667f, 1f, RoomHalfDepth * 0.6571f),
-                new Vector3(0f, 1f, RoomHalfDepth * 0.8f),
+                new[] { 1.0f, 1.8f, 1.1f, 2.2f, 1.0f },
+                new[] { 1.6f, 1.0f, 2.0f, 1.0f, 1.7f },
+                new[] { 1.0f, 2.1f, 1.0f, 1.6f, 1.0f },
             };
 
-            var fragments = new Object[fragmentPositions.Length];
-            for (var i = 0; i < fragmentPositions.Length; i++)
+            var pointsGo = new GameObject("FragmentSpawnPoints");
+            pointsGo.transform.SetParent(roomRoot, false);
+
+            var points = new Object[rows.Length * columns.Length];
+            var pointIndex = 0;
+            for (var r = 0; r < rows.Length; r++)
+            {
+                for (var c = 0; c < columns.Length; c++)
+                {
+                    var pointGo = new GameObject($"FragmentSpawnPoint_{pointIndex + 1}");
+                    pointGo.transform.SetParent(pointsGo.transform, false);
+                    pointGo.transform.localPosition = new Vector3(RoomHalfWidth * columns[c], heightsByRow[r][c], RoomHalfDepth * rows[r]);
+                    points[pointIndex] = pointGo.transform;
+                    pointIndex++;
+                }
+            }
+
+            return points;
+        }
+
+        private static Object[] BuildFragments(Transform roomRoot, Palette palette)
+        {
+            // Positions no longer matter here -- FlashlightMiniGame.RandomizeFragmentPositions()
+            // moves these to 5 of the 15 FragmentSpawnPoints on Awake and on every run/retry.
+            const int fragmentCount = 5;
+            var fragments = new Object[fragmentCount];
+            for (var i = 0; i < fragmentCount; i++)
             {
                 var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 go.name = $"KeyFragment_{i + 1}";
                 go.transform.SetParent(roomRoot, false);
-                go.transform.localPosition = fragmentPositions[i];
+                go.transform.localPosition = new Vector3(0f, 1f, 0f);
                 go.transform.localScale = Vector3.one * 0.3f;
                 go.GetComponent<MeshRenderer>().sharedMaterial = palette.Fragment;
                 go.GetComponent<SphereCollider>().isTrigger = true;
 
                 var fragment = go.AddComponent<FlashlightKeyFragment>();
                 SetObjectField(fragment, "collectedVisual", go);
+                go.AddComponent<FlashlightFragmentGlow>();
                 fragments[i] = fragment;
             }
 

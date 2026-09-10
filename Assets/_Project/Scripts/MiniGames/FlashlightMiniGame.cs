@@ -20,6 +20,8 @@ namespace HorrorGame.MiniGames
         [Header("Objectives")]
         [SerializeField, Min(1)] private int targetFragmentCount = 5;
         [SerializeField] private FlashlightKeyFragment[] fragments;
+        [Tooltip("15 static candidate spots; 5 are randomly chosen each run/retry and the fragments are moved there.")]
+        [SerializeField] private Transform[] fragmentSpawnPoints;
 
         [Header("Timing")]
         [SerializeField, Min(5f)] private float baseTimeLimitSeconds = 120f;
@@ -63,6 +65,10 @@ namespace HorrorGame.MiniGames
                     fragments[i].Collected += OnFragmentCollected;
                 }
             }
+
+            // So the room already looks populated (fragments spread across 5 of the 15 spawn
+            // points) the first time anyone walks in, not just after the challenge is started.
+            RandomizeFragmentPositions();
         }
 
         private void OnDestroy()
@@ -133,14 +139,51 @@ namespace HorrorGame.MiniGames
 
             if (monsterSwitcher != null)
             {
+                monsterSwitcher.ResetToStartingAnchor();
                 monsterSwitcher.ApplyThreatLevel(runThreatAtStart);
+                // Only cycle anchors while a session is actually running -- previously it switched
+                // continuously from scene load regardless of whether anyone had entered the room.
+                monsterSwitcher.SetActive(true);
             }
 
+            RandomizeFragmentPositions();
             for (var i = 0; i < fragments.Length; i++)
             {
                 if (fragments[i] != null)
                 {
                     fragments[i].ResetFragment();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Moves each fragment to a randomly chosen, distinct spawn point out of the 15 static
+        /// candidates. Called on Awake (so the room looks populated before the first start) and
+        /// on every OnPlayersEntered (so each run/retry gets a fresh layout).
+        /// </summary>
+        private void RandomizeFragmentPositions()
+        {
+            if (fragmentSpawnPoints == null || fragmentSpawnPoints.Length == 0 || fragments == null || fragments.Length == 0)
+            {
+                return;
+            }
+
+            var indices = new List<int>(fragmentSpawnPoints.Length);
+            for (var i = 0; i < fragmentSpawnPoints.Length; i++)
+            {
+                indices.Add(i);
+            }
+
+            var pickCount = Mathf.Min(fragments.Length, indices.Count);
+            for (var i = 0; i < pickCount; i++)
+            {
+                var swapIndex = UnityEngine.Random.Range(i, indices.Count);
+                (indices[i], indices[swapIndex]) = (indices[swapIndex], indices[i]);
+
+                var point = fragmentSpawnPoints[indices[i]];
+                if (fragments[i] != null && point != null)
+                {
+                    fragments[i].transform.position = point.position;
                 }
             }
         }
@@ -156,6 +199,11 @@ namespace HorrorGame.MiniGames
             }
 
             isRunning = false;
+            if (monsterSwitcher != null)
+            {
+                monsterSwitcher.SetActive(false);
+            }
+
             Solved?.Invoke();
         }
 
@@ -170,6 +218,11 @@ namespace HorrorGame.MiniGames
             }
 
             isRunning = false;
+            if (monsterSwitcher != null)
+            {
+                monsterSwitcher.SetActive(false);
+            }
+
             Failed?.Invoke();
         }
 

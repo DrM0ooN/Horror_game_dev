@@ -1,8 +1,7 @@
 Photon Voice 2 Change Log
 
 v2.63 (February 23, 2026)
-   PUN2: v2.52
-   RT/lib: v4.1.8.17  (resending improvements)
+   RT/lib: v5.1.10
    PhotonVoiceApi: revision 8254
    Unity: 2021.3.45f2 or higher
 Core:
@@ -19,8 +18,7 @@ Pun:
    MINOR: If PunVoiceClient.UsePunAppSettings is true (default) it will now also copy the PhotonNetwork.ServerPortOverrides to use the same port range. E.g. if PUN uses the alternative UDP port range (2700x), Voice will as well.
 
 v2.62 (November 24, 2025)
-   PUN2: v2.51 (PUN2.51)
-   RT/lib: v4.1.8.16
+   RT/lib: v5.1.8
    PhotonVoiceApi: revision 8085
    Unity: 2019.4.39 or higher
 Unity:
@@ -36,11 +34,10 @@ PS4/PS5:
    FIXED: PlayStationAudioOut now waits 50ms after playing output has ended before setting the value of the IsPlaying property back to false to avoid flickering visual IsPlaying indicators
 
 v2.61 (October 28, 2025)
-   PUN2: v2.51 (PUN2.51)
-   RT/lib: v4.1.8.16
+   RT/lib: v5.1.8
    PhotonVoiceApi: revision 8085
    Unity: 2019.4.39 or higher
-   UPDATED: Photon3Unity3D.dll, Photon Realtime (LoadBalancing), Photon Chat to v4.1.8.16, PUN to v2.51
+   UPDATED: Photon3Unity3D.dll, Photon Realtime (LoadBalancing), Photon Chat to v5.1.8
 Unity: 
    CHANGED: default Recorder frameDuration to Frame40ms for a slightly more conservative interval.
 Android:
@@ -54,6 +51,13 @@ Nintendo Switch:
    ADDED: Opus codec support for Switch 2
    ADDED: libPhotonVoiceAudioInputPlugin.a for the Switch
    UPDATED: the Switch build of opus_egpv.a to the same Nintendo SDK as used for the Switch 2 build
+
+v2.60 (October 24, 2025)
+   RT/lib: v5.0.9
+   PhotonVoiceApi: revision 7933
+   Unity: 2019.4.39 or higher
+Fusion:
+   FIXED: support for breaking change of INetworkRunnerCallbacks in Fusion 2.1
 
 v2.59 (May 13, 2025)
    PUN2: v2.49 (PUN2.49)

@@ -6,6 +6,7 @@
 
 namespace Photon.Chat
 {
+    /// <summary>Configuration options for creating new channels.</summary>
     public class ChannelCreationOptions
     {
         /// <summary>Default values of channel creation options.</summary>

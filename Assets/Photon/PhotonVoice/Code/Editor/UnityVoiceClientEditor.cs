@@ -1,6 +1,5 @@
 ﻿namespace Photon.Voice.Unity.Editor
 {
-    using ExitGames.Client.Photon;
     using System.Collections.Generic;
     using UnityEngine;
     using UnityEditor;
@@ -124,7 +123,7 @@
                 this.DisplayVoiceStats();
                 this.DisplayDebugInfo(this.connection.Client);
                 this.DisplayCachedVoiceInfo();
-                this.DisplayTrafficStats(this.connection.Client.LoadBalancingPeer);
+                this.DisplayTrafficStats(this.connection.Client.RealtimePeer);
 
                 if (connection.Client.State == ClientState.PeerCreated || connection.Client.State == ClientState.Disconnected)
                 {
@@ -161,7 +160,7 @@
             }
         }
 
-        protected virtual void DisplayDebugInfo(LoadBalancingClient client)
+        protected virtual void DisplayDebugInfo(RealtimeClient client)
         {
             this.showDebugInfo = EditorGUILayout.Foldout(this.showDebugInfo, new GUIContent("Client Debug Info", "Debug info for Photon client"));
             if (this.showDebugInfo)
@@ -172,13 +171,13 @@
                 {
                     this.DrawLabel("AppId", client.AppId);
                 }
-                if (!string.IsNullOrEmpty(client.AppVersion))
+                if (!string.IsNullOrEmpty(client.AppSettings.AppVersion))
                 {
-                    this.DrawLabel("AppVersion", client.AppVersion);
+                    this.DrawLabel("AppVersion", client.AppSettings.AppVersion);
                 }
-                if (!string.IsNullOrEmpty(client.CloudRegion))
+                if (!string.IsNullOrEmpty(client.CurrentRegion))
                 {
-                    this.DrawLabel("Current Cloud Region", client.CloudRegion);
+                    this.DrawLabel("Current Cloud Region", client.CurrentRegion);
                 }
                 if (client.IsConnected)
                 {
@@ -273,76 +272,62 @@
             }
         }
 
+        Client.TrafficStatsSnapshot statsSnapshot;
         // inspired by PhotonVoiceStatsGui.TrafficStatsWindow
-        protected virtual void DisplayTrafficStats(LoadBalancingPeer peer)
+        protected virtual void DisplayTrafficStats(Client.PhotonPeer peer)
         {
+            if (this.statsSnapshot == null)
+            {
+                this.statsSnapshot = peer.Stats.ToSnapshot();
+                peer.Stats.ResetMaximumCounters();
+            }
+
             this.showTrafficStats = EditorGUILayout.Foldout(this.showTrafficStats, new GUIContent("Traffic Stats", "Traffic Statistics for Photon Client"));
             if (this.showTrafficStats)
             {
-                GUILayout.Label(string.Format("RTT (ping): {0}[+/-{1}]ms, last={2}ms", peer.RoundTripTime, peer.RoundTripTimeVariance, peer.LastRoundTripTime));
-                //GUILayout.Label(string.Format("{0}ms since last ACK sent, {1}ms since last sent, {2}ms since last received",  peer.ConnectionTime - peer.LastSendAckTime, peer.ConnectionTime - peer.LastSendOutgoingTime, peer.ConnectionTime - peer.TimestampOfLastSocketReceive)); //add
-                GUILayout.Label(string.Format("Reliable Commands Resent: {0}", peer.ResentReliableCommands));
-                //GUILayout.Label(string.Format("last operation={0}B current dispatch:{1}B", peer.ByteCountLastOperation, peer.ByteCountCurrentDispatch));
-                //GUILayout.Label(string.Format("Packets Lost: by challenge={0} by CRC={1}", peer.PacketLossByChallenge, peer.PacketLossByCrc));
-                //GUILayout.Label(string.Format("Total Traffic: In={0} - {1} Out={2} - {3}", this.FormatSize(peer.BytesIn, ti:string.Empty), this.FormatSize(this.connection.BytesReceivedPerSecond), this.FormatSize(peer.BytesOut, ti:string.Empty), this.FormatSize(this.connection.BytesSentPerSecond)));
-                GUILayout.Label(string.Format("Total Traffic: In={0} Out={1}", this.FormatSize(peer.BytesIn, ti: string.Empty), this.FormatSize(peer.BytesOut, ti: string.Empty)));
-                peer.TrafficStatsEnabled = EditorGUILayout.Toggle(new GUIContent("Advanced", "Enable or disable traffic Statistics for Photon Peer"), peer.TrafficStatsEnabled);
-                if (peer.TrafficStatsEnabled)
+                var delta = new Client.TrafficStatsDelta(statsSnapshot, peer.Stats.ToSnapshot());
+
+                GUILayout.Label(string.Format("RTT (ping): {0}[+/-{1}]ms, last={2}ms", peer.Stats.RoundtripTime, peer.Stats.RoundtripTimeVariance, peer.Stats.LastRoundtripTime));
+                GUILayout.Label(string.Format("Reliable Commands Resent: {0}", peer.Stats.UdpReliableCommandsResent));
+                GUILayout.Label(string.Format("Total Traffic: In={0} Out={1}", this.FormatSize(delta.BytesIn, ti: string.Empty), this.FormatSize(delta.BytesOut, ti: string.Empty)));
+                GUILayout.Label(string.Format("Time elapsed: {0} seconds", delta.DeltaTime / 1000));
+                this.DisplayTrafficStatsGameLevel(peer.Stats, delta);
+                this.DisplayTrafficStats(peer.Stats, delta);
+
+                if (GUILayout.Button("Reset"))
                 {
-                    long elapsedSeconds = peer.TrafficStatsElapsedMs / 1000;
-                    if (elapsedSeconds == 0)
-                    {
-                        elapsedSeconds = 1;
-                    }
-                    GUILayout.Label(string.Format("Time elapsed: {0} seconds", elapsedSeconds));
-                    this.DisplayTrafficStatsGameLevel(peer.TrafficStatsGameLevel, elapsedSeconds);
-                    TrafficStats trafficStats = peer.TrafficStatsIncoming;
-                    GUILayout.Label(string.Format("Protocol: {0} Package Header Size={1}B", peer.TransportProtocol, trafficStats.PackageHeaderSize));
-                    EditorGUILayout.LabelField("Commands/Packets Incoming", EditorStyles.boldLabel);
-                    this.DisplayTrafficStats(/*peer, */trafficStats, elapsedSeconds);
-                    EditorGUILayout.LabelField("Commands/Packets Outgoing", EditorStyles.boldLabel);
-                    trafficStats = peer.TrafficStatsOutgoing;
-                    this.DisplayTrafficStats(/*peer, */trafficStats, elapsedSeconds);
-                    if (GUILayout.Button("Reset"))
-                    {
-                        peer.TrafficStatsReset();
-                    }
+                    this.statsSnapshot = peer.Stats.ToSnapshot();
+                    peer.Stats.ResetMaximumCounters();
                 }
             }
         }
 
-        private void DisplayTrafficStats(/*PhotonPeer peer, */TrafficStats trafficStats, long elapsedSeconds)
+        private void DisplayTrafficStats(Client.TrafficStats now, Client.TrafficStatsDelta delta)
         {
-            GUILayout.Label(string.Format("\tControl Commands: #={0} a#={1}/s s={2} as={3}", trafficStats.ControlCommandCount, trafficStats.ControlCommandCount / elapsedSeconds, this.FormatSize(trafficStats.ControlCommandBytes, ti: string.Empty), this.FormatSize(trafficStats.ControlCommandBytes / elapsedSeconds)));
-            GUILayout.Label(string.Format("\tFragment Commands: #={0} a#={1}/s s={2} as={3}", trafficStats.FragmentCommandCount, trafficStats.FragmentCommandCount / elapsedSeconds, this.FormatSize(trafficStats.FragmentCommandBytes, ti: string.Empty), this.FormatSize(trafficStats.FragmentCommandBytes / elapsedSeconds)));
-            GUILayout.Label(string.Format("\tReliable Commands: #={0} a#={1}/s s={2} as={3}", trafficStats.ReliableCommandCount, trafficStats.ReliableCommandCount / elapsedSeconds, this.FormatSize(trafficStats.ReliableCommandBytes, ti: string.Empty), this.FormatSize(trafficStats.ReliableCommandCount / elapsedSeconds)));
-            GUILayout.Label(string.Format("\tUnreliable Commands: #={0} a#={1}/s s={2} as={3}", trafficStats.UnreliableCommandCount, trafficStats.UnreliableCommandCount / elapsedSeconds, this.FormatSize(trafficStats.UnreliableCommandBytes, ti: string.Empty), this.FormatSize(trafficStats.UnreliableCommandBytes / elapsedSeconds)));
-            GUILayout.Label(string.Format("\tTotal Commands: #={0} a#={1}/s s={2} as={3}", trafficStats.TotalCommandCount, trafficStats.TotalCommandCount / elapsedSeconds, this.FormatSize(trafficStats.TotalCommandBytes, ti: string.Empty), this.FormatSize(trafficStats.TotalCommandBytes / elapsedSeconds)));
-            GUILayout.Label(string.Format("\tTotal Packets: #={0} a#={1}/s s={2} as={3}", trafficStats.TotalPacketCount, trafficStats.TotalPacketCount / elapsedSeconds, this.FormatSize(trafficStats.TotalPacketBytes, ti: string.Empty), this.FormatSize(trafficStats.TotalPacketBytes / elapsedSeconds)));
-            GUILayout.Label(string.Format("\tTotal Commands in Packets: {0}", trafficStats.TotalCommandsInPackets));
-            //GUILayout.Label(string.Format("\t{0}ms since last ACK", peer.ConnectionTime - trafficStats.TimestampOfLastAck));
-            //GUILayout.Label(string.Format("\t{0} ms since last reliable Command", peer.ConnectionTime - trafficStats.TimestampOfLastReliableCommand));
+            GUILayout.Label(string.Format("\tFragment Rcvd: #={0} a#={1}/s", delta.UdpFragmentsIn, delta.DeltaTime > 0 ? delta.UdpFragmentsIn * 1000 / delta.DeltaTime : 0));
+            GUILayout.Label(string.Format("\tFragment Sent: #={0} a#={1}/s", delta.UdpFragmentsOut, delta.DeltaTime > 0 ? delta.UdpFragmentsOut * 1000 / delta.DeltaTime : 0));
+            GUILayout.Label(string.Format("\tReliable Sent: #={0} a#={1}/s", delta.UdpReliableCommandsSent, delta.DeltaTime > 0 ? delta.UdpReliableCommandsSent * 1000 / delta.DeltaTime : 0));
+            GUILayout.Label(string.Format("\tReliable Resent: #={0} a#={1}/s", delta.UdpReliableCommandsResent, delta.DeltaTime > 0 ? delta.UdpReliableCommandsResent * 1000 / delta.DeltaTime : 0));
+            GUILayout.Label(string.Format("\tReliable In Flight: #={0} a#={1}/s", delta.UdpReliableCommandsInFlight, delta.DeltaTime > 0 ? delta.UdpReliableCommandsInFlight * 1000 / delta.DeltaTime : 0));
         }
 
-        private void DisplayTrafficStatsGameLevel(TrafficStatsGameLevel gls, long elapsedSeconds)
+        private void DisplayTrafficStatsGameLevel(Client.TrafficStats now, Client.TrafficStatsDelta delta)
         {
-            GUILayout.Label("In Game", EditorStyles.boldLabel);
-            GUILayout.Label(string.Format("\tmax. delta between\n\t\tsend: {0,4}ms \n\t\tdispatch: {1,4}ms \n\tlongest dispatch for: \n\t\tev({3}):{2,3}ms \n\t\top({5}):{4,3}ms",
-                gls.LongestDeltaBetweenSending,
-                gls.LongestDeltaBetweenDispatching,
-                gls.LongestEventCallback,
-                gls.LongestEventCallbackCode,
-                gls.LongestOpResponseCallback,
-                gls.LongestOpResponseCallbackOpCode));
-            GUILayout.Label("\tMessages", EditorStyles.boldLabel);
-            GUILayout.Label(string.Format("\t\tTotal: Out {0,4}msg | In {1,4}msg | Sum {2,4}msg",
-                gls.TotalOutgoingMessageCount,
-                gls.TotalIncomingMessageCount,
-                gls.TotalMessageCount));
-            GUILayout.Label(string.Format("\t\tAverage: Out {0,4}msg/s | In {1,4}msg/s | Sum {2,4}msg/s",
-                gls.TotalOutgoingMessageCount / elapsedSeconds,
-                gls.TotalIncomingMessageCount / elapsedSeconds,
-                gls.TotalMessageCount / elapsedSeconds));
+            GUILayout.Label(string.Format("Max. delta between\n\tsend: {0,4}ms \n\tdispatch: {1,4}ms",
+                now.LongestDeltaBetweenSendOutgoingCalls,
+                now.LongestDeltaBetweenDispatchCalls));
+            GUILayout.Label("Messages", EditorStyles.boldLabel);
+            GUILayout.Label(string.Format("\tTotal: Out {0,4}msg | In {1,4}msg | Sum {2,4}msg",
+                delta.PackagesOut,
+                delta.PackagesIn,
+                delta.PackagesOut + delta.PackagesIn));
+            if (delta.DeltaTime > 0)
+            {
+                GUILayout.Label(string.Format("\tAverage: Out {0,4}msg/s | In {1,4}msg/s | Sum {2,4}msg/s",
+                    delta.PackagesOut * 1000 / delta.DeltaTime,
+                    delta.PackagesIn * 1000 / delta.DeltaTime,
+                    (delta.PackagesOut + delta.PackagesIn) * 1000 / delta.DeltaTime));
+            }
         }
 
         private void DrawLabel(string prefix, string text)
@@ -377,7 +362,7 @@
                 EditorGUILayout.PropertyField(this.settingsSp.FindPropertyRelative("FixedRegion"), new GUIContent("Fixed Region", "Photon Cloud setting, needs a Name Server.\nDefine one region to always connect to.\nLeave empty to use the best region from a server-side region list."));
                 EditorGUILayout.PropertyField(this.settingsSp.FindPropertyRelative("Server"), new GUIContent("Server", "Typically empty for Photon Cloud.\nFor Photon Server, enter your host name or IP. Also uncheck \"Use Name Server\" for older Photon Server versions."));
                 EditorGUILayout.PropertyField(this.settingsSp.FindPropertyRelative("Port"), new GUIContent("Port", "Use 0 for Photon Cloud.\nOnPremise uses 5055 for UDP and 4530 for TCP."));
-                EditorGUILayout.PropertyField(this.settingsSp.FindPropertyRelative("ProxyServer"), new GUIContent("Proxy Server", "HTTP Proxy Server for WebSocket connection. See LoadBalancingClient.ProxyServerAddress for options."));
+                EditorGUILayout.PropertyField(this.settingsSp.FindPropertyRelative("ProxyServer"), new GUIContent("Proxy Server", "HTTP Proxy Server for WebSocket connection. See RealtimeClient.ProxyServerAddress for options."));
                 EditorGUILayout.PropertyField(this.settingsSp.FindPropertyRelative("Protocol"), new GUIContent("Protocol", "Use UDP where possible.\nWSS works on WebGL and Xbox exports.\nDefine WEBSOCKET for use on other platforms."));
                 EditorGUILayout.PropertyField(this.settingsSp.FindPropertyRelative("EnableProtocolFallback"), new GUIContent("Protocol Fallback", "Automatically try another network protocol, if initial connect fails.\nWill use default Name Server ports."));
                 EditorGUILayout.PropertyField(this.settingsSp.FindPropertyRelative("EnableLobbyStatistics"), new GUIContent("Lobby Statistics", "When using multiple room lists (lobbies), the server can send info about their usage."));

@@ -2,7 +2,6 @@ namespace Photon.Voice.Unity.Demos.DemoVoiceUI
 {
     using System.Collections.Generic;
     using Realtime;
-    using ExitGames.Client.Photon;
     using UtilityScripts;
     using UnityEngine;
     using UnityEngine.UI;
@@ -403,7 +402,7 @@ namespace Photon.Voice.Unity.Demos.DemoVoiceUI
             this.InitUiValues(); // refresh UI in case changed from Unity Editor
 #endif
             this.connectionStatusText.text = this.voiceConnection.Client.State.ToString();
-            this.serverStatusText.text = string.Format("{0}/{1}", this.voiceConnection.Client.CloudRegion, this.voiceConnection.Client.CurrentServerAddress);
+            this.serverStatusText.text = string.Format("{0}/{1}", this.voiceConnection.Client.CurrentRegion, this.voiceConnection.Client.CurrentServerAddress);
             if (this.voiceConnection.PrimaryRecorder.IsCurrentlyTransmitting)
             {
                 var amplitude = this.voiceConnection.PrimaryRecorder.LevelMeter.CurrentAvgAmp;
@@ -434,13 +433,13 @@ namespace Photon.Voice.Unity.Demos.DemoVoiceUI
                 this.ResetTextColor(this.packetLossWarningText);
             }
 
-            this.rttText.text = string.Concat("RTT:", this.voiceConnection.Client.LoadBalancingPeer.RoundTripTime);
-            this.SetTextColor(this.voiceConnection.Client.LoadBalancingPeer.RoundTripTime, this.rttText, this.rttYellowThreshold, this.rttRedThreshold);
-            this.rttVariationText.text = string.Concat("VAR:", this.voiceConnection.Client.LoadBalancingPeer.RoundTripTimeVariance);
-            this.SetTextColor(this.voiceConnection.Client.LoadBalancingPeer.RoundTripTimeVariance, this.rttVariationText, this.rttVariationYellowThreshold, this.rttVariationRedThreshold);
+            this.rttText.text = string.Concat("RTT:", this.voiceConnection.Client.RealtimePeer.Stats.RoundtripTime);
+            this.SetTextColor(this.voiceConnection.Client.RealtimePeer.Stats.RoundtripTime, this.rttText, this.rttYellowThreshold, this.rttRedThreshold);
+            this.rttVariationText.text = string.Concat("VAR:", this.voiceConnection.Client.RealtimePeer.Stats.RoundtripTimeVariance);
+            this.SetTextColor(this.voiceConnection.Client.RealtimePeer.Stats.RoundtripTimeVariance, this.rttVariationText, this.rttVariationYellowThreshold, this.rttVariationRedThreshold);
         }
 
-        private void SetTextColor(int textValue, Text text, int yellowThreshold, int redThreshold)
+        private void SetTextColor(long textValue, Text text, int yellowThreshold, int redThreshold)
         {
             if (textValue > redThreshold)
             {
@@ -554,7 +553,7 @@ namespace Photon.Voice.Unity.Demos.DemoVoiceUI
             this.roomStatusText.text = this.voiceConnection.Client.CurrentRoom == null ? string.Empty : string.Format("{0} {1}", this.voiceConnection.Client.CurrentRoom.Name, playerDebugString);
         }
 
-        protected virtual void OnActorPropertiesChanged(Player targetPlayer, Hashtable changedProps)
+        protected virtual void OnActorPropertiesChanged(Player targetPlayer, Client.PhotonHashtable changedProps)
         {
             if (targetPlayer.IsLocal)
             {
@@ -582,11 +581,11 @@ namespace Photon.Voice.Unity.Demos.DemoVoiceUI
             this.SetRoomDebugText();
         }
 
-        void IInRoomCallbacks.OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
+        void IInRoomCallbacks.OnRoomPropertiesUpdate(Client.PhotonHashtable propertiesThatChanged)
         {
         }
 
-        void IInRoomCallbacks.OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
+        void IInRoomCallbacks.OnPlayerPropertiesUpdate(Player targetPlayer, Client.PhotonHashtable changedProps)
         {
             this.OnActorPropertiesChanged(targetPlayer, changedProps);
         }

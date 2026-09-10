@@ -2,7 +2,7 @@
     "name": "Voice.FMOD.Editor",
     "references": [
         "PhotonVoice.Editor",
-        "PhotonRealtime",
+        "Photon.Realtime",
         "PhotonVoice.FMOD",
         "PhotonVoiceApi.FMOD",
         "PhotonVoice.API",

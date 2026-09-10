@@ -9,7 +9,6 @@
 // <author>developer@photonengine.com</author>
 // ----------------------------------------------------------------------------
 
-using ExitGames.Client.Photon;
 using UnityEngine;
 using Photon.Realtime;
 using Photon.Voice.Unity;
@@ -97,7 +96,7 @@ namespace Photon.Voice
             base.OnDestroy();
         }
 
-        protected override void OnOperationResponseReceived(OperationResponse operationResponse)
+        protected override void OnOperationResponseReceived(Client.OperationResponse operationResponse)
         {
             // the base method only logs some error cases. this class re-implements that, so we deliberately skip calling the base method
             //base.OnOperationResponseReceived(operationResponse);
@@ -113,7 +112,7 @@ namespace Photon.Voice
                         break;
 
                     case OperationCode.JoinGame:
-                        this.Logger.Log(LogLevel.Error, "Failed to join room. RoomName: '{2}' Region: {3} Error: {0}. Message: {1}.", operationResponse.ReturnCode, operationResponse.DebugMessage, GetVoiceRoomName(), this.Client.CloudRegion);
+                        this.Logger.Log(LogLevel.Error, "Failed to join room. RoomName: '{2}' Region: {3} Error: {0}. Message: {1}.", operationResponse.ReturnCode, operationResponse.DebugMessage, GetVoiceRoomName(), this.Client.CurrentRegion);
 
                         // TODO: replace the following with a cooldown time. check error code if this is a temporary issue and if so, the client can try again
                         this.errAuthOrJoin = true;    // prevents re-connecting without game logic doing something
@@ -205,13 +204,13 @@ namespace Photon.Voice
                 return false;
             }
 
-            var roomParams = new EnterRoomParams
+            var roomParams = new EnterRoomArgs
             {
                 RoomOptions = new RoomOptions { IsVisible = false, PlayerTtl = 2000 },
                 RoomName = voiceRoomName
             };
 
-            Debug.Log($"Calling OpJoinOrCreateRoom for room name '{voiceRoomName}' region {this.Client.CloudRegion}.");  // TODO: remove when done debugging VoiceFollowClient
+            Debug.Log($"Calling OpJoinOrCreateRoom for room name '{voiceRoomName}' region {this.Client.CurrentRegion}.");  // TODO: remove when done debugging VoiceFollowClient
             return this.Client.OpJoinOrCreateRoom(roomParams);
         }
 

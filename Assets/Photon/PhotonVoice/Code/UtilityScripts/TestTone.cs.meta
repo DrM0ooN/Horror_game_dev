@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: 164ef2a94699d485abc9c2530d65736f
 timeCreated: 1540904558
-licenseType: Store
+licenseType: Free
 MonoImporter:
   serializedVersion: 2
   defaultReferences: []
@@ -10,10 +10,3 @@ MonoImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 130518
-  packageName: Photon Voice 2
-  packageVersion: 2.63
-  assetPath: Assets/Photon/PhotonVoice/Code/UtilityScripts/TestTone.cs
-  uploadId: 868348

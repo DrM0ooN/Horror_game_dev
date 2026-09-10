@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: a3986deb98168394684c41606a9495af
 timeCreated: 1561048437
-licenseType: Store
+licenseType: Free
 MonoImporter:
   serializedVersion: 2
   defaultReferences: []
@@ -10,10 +10,3 @@ MonoImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 130518
-  packageName: Photon Voice 2
-  packageVersion: 2.63
-  assetPath: Assets/Photon/PhotonVoice/Code/UtilityScripts/MicAmplifier/MicAmplifier.cs
-  uploadId: 868348

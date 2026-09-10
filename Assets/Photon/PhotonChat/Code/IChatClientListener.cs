@@ -8,7 +8,7 @@
 namespace Photon.Chat
 {
     using System.Collections.Generic;
-    using ExitGames.Client.Photon;
+    using Photon.Client;
 
     /// <summary>
     /// Callback interface for Chat client side. Contains callback methods to notify your app about updates.
@@ -20,9 +20,9 @@ namespace Photon.Chat
         /// All debug output of the library will be reported through this method. Print it or put it in a
         /// buffer to use it on-screen.
         /// </summary>
-        /// <param name="level">DebugLevel (severity) of the message.</param>
+        /// <param name="level">LogLevel (severity) of the message.</param>
         /// <param name="message">Debug text. Print to System.Console or screen.</param>
-        void DebugReturn(DebugLevel level, string message);
+        void DebugReturn(LogLevel level, string message);
 
         /// <summary>
         /// Disconnection happened.
@@ -36,6 +36,38 @@ namespace Photon.Chat
         /// Clients have to be connected before they can send their state, subscribe to channels and send any messages.
         /// </remarks>
         void OnConnected();
+
+
+        /// <summary>
+        /// Called if a Custom Authentication service responds with additional data.
+        /// </summary>
+        /// <remarks>
+        /// Custom Authentication services may pass custom data in their response.
+        /// 
+        /// Available data is passed as Dictionary. While the keys of your data have to be strings,
+        /// the values can be either string or a number, as Json is used from server to server.
+        /// 
+        /// You need to make extra sure, that the value type is the one you expect. Numbers become (currently) int64.
+        /// </remarks>
+        /// <see href="https://doc.photonengine.com/en-us/chat/current/connection-and-authentication/authentication/custom-authentication"/>
+        void OnCustomAuthenticationResponse(Dictionary<string, object> data);
+
+        /// <summary>
+        /// Called when custom authentication failed. Prompts client to disconnect.
+        /// </summary>
+        /// <remarks>
+        /// Custom Authentication can fail due to user-input, bad tokens/secrets.
+        /// If authentication is successful, this method is not called.
+        ///
+        /// During development of a game, it might also fail due to wrong configuration on the server side.
+        /// In those cases, logging the debugMessage is very important.
+        ///
+        /// Unless you setup a custom authentication service for your app (in the [Dashboard](https://dashboard.photonengine.com)),
+        /// this won't be called!
+        /// </remarks>
+        /// <param name="debugMessage">Contains a debug message why authentication failed. This has to be fixed during development.</param>
+        void OnCustomAuthenticationFailed(string debugMessage);
+
 
         /// <summary>The ChatClient's state changed. Usually, OnConnected and OnDisconnected are the callbacks to react to.</summary>
         /// <param name="state">The new state.</param>

@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: dd7fea91fe63f4e1b884ef1e16a975c3
 timeCreated: 1540904415
-licenseType: Store
+licenseType: Free
 MonoImporter:
   serializedVersion: 2
   defaultReferences: []
@@ -10,10 +10,3 @@ MonoImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 130518
-  packageName: Photon Voice 2
-  packageVersion: 2.63
-  assetPath: Assets/Photon/PhotonVoice/Code/Speaker.cs
-  uploadId: 868348

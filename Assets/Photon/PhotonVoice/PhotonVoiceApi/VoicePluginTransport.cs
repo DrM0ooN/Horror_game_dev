@@ -24,10 +24,10 @@ namespace Photon.Voice
         Add = 2
     }
 
-    public class VoicePluginTransport : LoadBalancingTransport2
+    public class VoicePluginTransport : Realtime5Transport2
     {
         public VoicePluginTransport(ILogger logger = null,
-            ConnectionProtocol connectionProtocol = ConnectionProtocol.Udp, bool cppCompatibilityMode = false) : base(
+            Client.ConnectionProtocol connectionProtocol = Client.ConnectionProtocol.Udp, bool cppCompatibilityMode = false) : base(
             logger, connectionProtocol, cppCompatibilityMode)
         {
         }
@@ -80,7 +80,7 @@ namespace Photon.Voice
             data[1] = players.ToArray();
             data[2] = (byte)method;
 
-            this.OpRaiseEvent(VoicePluginEvent.CommandCode, data, Realtime.RaiseEventOptions.Default, SendOptions.SendReliable);
+            this.OpRaiseEvent(VoicePluginEvent.CommandCode, data, Realtime.RaiseEventArgs.Default, Client.SendOptions.SendReliable);
         }
     }
 }

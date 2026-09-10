@@ -1,6 +1,5 @@
 ﻿namespace Photon.Voice.Unity.Demos.DemoVoiceUI
 {
-    using ExitGames.Client.Photon;
     using Unity;
     using UnityEngine;
     using UnityEngine.UI;
@@ -36,10 +35,10 @@
         protected Speaker speaker;
         private AudioSource audioSource;
 
-        protected Player Actor { get { return this.loadBalancingClient != null && this.loadBalancingClient.CurrentRoom != null ? this.loadBalancingClient.CurrentRoom.GetPlayer(this.speaker.RemoteVoice.PlayerId) : null; } }
+        protected Player Actor { get { return realtimeClient != null && this.realtimeClient.CurrentRoom != null ? this.realtimeClient.CurrentRoom.GetPlayer(this.speaker.RemoteVoice.PlayerId) : null; } }
 
         protected VoiceConnection voiceConnection;
-        protected LoadBalancingClient loadBalancingClient;
+        protected RealtimeClient realtimeClient;
 
         protected virtual void Start()
         {
@@ -94,9 +93,9 @@
 
         private void OnDestroy()
         {
-            if (this.loadBalancingClient != null)
+            if (this.realtimeClient != null)
             {
-                this.loadBalancingClient.RemoveCallbackTarget(this);
+                this.realtimeClient.RemoveCallbackTarget(this);
             }
         }
 
@@ -105,7 +104,7 @@
             string nick = this.speaker.name;
             if (this.Actor != null)
             {
-                nick = this.Actor.NickName;
+                nick = this.Actor.UserId;
                 if (string.IsNullOrEmpty(nick))
                 {
                     nick = string.Concat("user ", this.Actor.ActorNumber);
@@ -136,7 +135,7 @@
             this.remoteIsMuting.enabled = isMuted;
         }
 
-        protected virtual void OnActorPropertiesChanged(Player targetPlayer, Hashtable changedProps)
+        protected virtual void OnActorPropertiesChanged(Player targetPlayer, Client.PhotonHashtable changedProps)
         {
             if (this.speaker != null && this.speaker.RemoteVoice != null && targetPlayer.ActorNumber == this.speaker.RemoteVoice.PlayerId)
             {
@@ -149,8 +148,8 @@
         public virtual void Init(VoiceConnection vC)
         {
             this.voiceConnection = vC;
-            this.loadBalancingClient = this.voiceConnection.Client;
-            this.loadBalancingClient.AddCallbackTarget(this);
+            this.realtimeClient = this.voiceConnection.Client;
+            this.realtimeClient.AddCallbackTarget(this);
         }
 
         #region IInRoomCallbacks
@@ -163,11 +162,11 @@
         {
         }
 
-        void IInRoomCallbacks.OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
+        void IInRoomCallbacks.OnRoomPropertiesUpdate(Client.PhotonHashtable propertiesThatChanged)
         {
         }
 
-        void IInRoomCallbacks.OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
+        void IInRoomCallbacks.OnPlayerPropertiesUpdate(Player targetPlayer, Client.PhotonHashtable changedProps)
         {
             this.OnActorPropertiesChanged(targetPlayer, changedProps);
         }

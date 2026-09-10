@@ -6,9 +6,7 @@ namespace Photon.Voice.Fusion
     using PhotonAppSettings = global::Fusion.Photon.Realtime.PhotonAppSettings;
     using System.Collections.Generic;
     using Realtime;
-    using ExitGames.Client.Photon;
     using UnityEngine;
-    using Unity;
     using System;
     using LogLevel = Photon.Voice.LogLevel;
 
@@ -97,7 +95,7 @@ namespace Photon.Voice.Fusion
             base.OnDestroy();
         }
 
-        protected override Speaker InstantiateSpeakerForRemoteVoice(int playerId, byte voiceId, object userData)
+        protected override Unity.Speaker InstantiateSpeakerForRemoteVoice(int playerId, byte voiceId, object userData)
         {
             if (userData == null) // Recorder w/o VoiceNetworkObject: probably created due to this.UsePrimaryRecorder = true
             {
@@ -160,28 +158,28 @@ namespace Photon.Voice.Fusion
                 settings.FixedRegion = PhotonAppSettings.Global.AppSettings.FixedRegion;
                 settings.UseNameServer = PhotonAppSettings.Global.AppSettings.UseNameServer;
                 settings.Server = PhotonAppSettings.Global.AppSettings.Server;
-                settings.Port = PhotonAppSettings.Global.AppSettings.Port;
+                settings.Port = (ushort)PhotonAppSettings.Global.AppSettings.Port;
                 settings.ProxyServer = PhotonAppSettings.Global.AppSettings.ProxyServer;
                 settings.BestRegionSummaryFromStorage = PhotonAppSettings.Global.AppSettings.BestRegionSummaryFromStorage;
                 settings.EnableLobbyStatistics = false;
                 settings.EnableProtocolFallback = PhotonAppSettings.Global.AppSettings.EnableProtocolFallback;
-                settings.Protocol = PhotonAppSettings.Global.AppSettings.Protocol;
+                settings.Protocol = (Client.ConnectionProtocol)PhotonAppSettings.Global.AppSettings.Protocol;
                 settings.AuthMode = (AuthModeOption)(int)PhotonAppSettings.Global.AppSettings.AuthMode;
-                settings.NetworkLogging = PhotonAppSettings.Global.AppSettings.NetworkLogging;
+                settings.NetworkLogging = (Client.LogLevel)PhotonAppSettings.Global.AppSettings.NetworkLogging;
 #else
                 settings.AppIdVoice = PhotonAppSettings.Instance.AppSettings.AppIdVoice;
                 settings.AppVersion = PhotonAppSettings.Instance.AppSettings.AppVersion;
                 settings.FixedRegion = PhotonAppSettings.Instance.AppSettings.FixedRegion;
                 settings.UseNameServer = PhotonAppSettings.Instance.AppSettings.UseNameServer;
                 settings.Server = PhotonAppSettings.Instance.AppSettings.Server;
-                settings.Port = PhotonAppSettings.Instance.AppSettings.Port;
+                settings.Port = (ushort)PhotonAppSettings.Instance.AppSettings.Port;
                 settings.ProxyServer = PhotonAppSettings.Instance.AppSettings.ProxyServer;
                 settings.BestRegionSummaryFromStorage = PhotonAppSettings.Instance.AppSettings.BestRegionSummaryFromStorage;
                 settings.EnableLobbyStatistics = false;
                 settings.EnableProtocolFallback = PhotonAppSettings.Instance.AppSettings.EnableProtocolFallback;
-                settings.Protocol = PhotonAppSettings.Instance.AppSettings.Protocol;
+                settings.Protocol = (Client.ConnectionProtocol)PhotonAppSettings.Instance.AppSettings.Protocol;
                 settings.AuthMode = (AuthModeOption)(int)PhotonAppSettings.Instance.AppSettings.AuthMode;
-                settings.NetworkLogging = PhotonAppSettings.Instance.AppSettings.NetworkLogging;
+                settings.NetworkLogging = (Client.LogLevel)PhotonAppSettings.Instance.AppSettings.NetworkLogging;
 #endif
             }
             else
@@ -238,12 +236,12 @@ namespace Photon.Voice.Fusion
 
         private static void VoiceRegisterCustomTypes()
         {
-            PhotonPeer.RegisterType(typeof(NetworkId), FusionNetworkIdTypeCode, SerializeFusionNetworkId, DeserializeFusionNetworkId);
+            Photon.Client.PhotonPeer.RegisterType(typeof(NetworkId), FusionNetworkIdTypeCode, SerializeFusionNetworkId, DeserializeFusionNetworkId);
         }
 
         private const byte FusionNetworkIdTypeCode = 0; // we need to make sure this does not clash with other custom types?
 
-        private static object DeserializeFusionNetworkId(StreamBuffer instream, short length)
+        private static object DeserializeFusionNetworkId(Client.StreamBuffer instream, short length)
         {
             NetworkId networkId = new NetworkId();
             lock (memCompressedUInt64)
@@ -254,7 +252,7 @@ namespace Photon.Voice.Fusion
             return networkId;
         }
 
-        private static ulong ReadCompressedUInt64(StreamBuffer stream)
+        private static ulong ReadCompressedUInt64(Client.StreamBuffer stream)
         {
             ulong value = 0;
             int shift = 0;
@@ -286,7 +284,7 @@ namespace Photon.Voice.Fusion
 
         private static byte[] memCompressedUInt64 = new byte[10];
 
-        private static int WriteCompressedUInt64(StreamBuffer stream, ulong value)
+        private static int WriteCompressedUInt64(Client.StreamBuffer stream, ulong value)
         {
             int count = 0;
             lock (memCompressedUInt64)
@@ -307,7 +305,7 @@ namespace Photon.Voice.Fusion
             return count;
         }
 
-        private static short SerializeFusionNetworkId(StreamBuffer outstream, object customobject)
+        private static short SerializeFusionNetworkId(Client.StreamBuffer outstream, object customobject)
         {
             NetworkId networkId = (NetworkId) customobject;
             return (short)WriteCompressedUInt64(outstream, networkId.Raw);
@@ -398,6 +396,14 @@ namespace Photon.Voice.Fusion
         {
         }
 
+#if FUSION_2_1_OR_NEWER
+        void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ReadOnlySpan<byte> data){} 
+#elif FUSION2
+        void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey reliableKey, ArraySegment<byte> data){}
+#else
+        void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data){}
+#endif
+
  #if FUSION2
         public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player)
         {
@@ -407,16 +413,7 @@ namespace Photon.Voice.Fusion
         {
         }
 
-        void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey reliableKey, ArraySegment<byte> data)
-        {
-        }
-
         void INetworkRunnerCallbacks.OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey reliableKey, float progress)
-        {
-        }
-
-#else
-        void INetworkRunnerCallbacks.OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data)
         {
         }
 #endif

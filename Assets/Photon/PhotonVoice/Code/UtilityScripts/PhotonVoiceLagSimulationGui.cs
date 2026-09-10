@@ -10,7 +10,6 @@
 // --------------------------------------------------------------------------------------------------------------------
 
 using UnityEngine;
-using ExitGames.Client.Photon;
 
 namespace Photon.Voice.Unity.UtilityScripts
 {
@@ -29,7 +28,7 @@ namespace Photon.Voice.Unity.UtilityScripts
         private bool visible = true;
 
         /// <summary>The peer currently in use (to set the network simulation).</summary>
-        private PhotonPeer peer;
+        private Client.PhotonPeer peer;
 
         private float debugLostPercent;
 
@@ -47,7 +46,7 @@ namespace Photon.Voice.Unity.UtilityScripts
                 Debug.LogWarningFormat(this, "Multiple VoiceConnection components found, using first occurrence attached to GameObject {0}", voiceConnections[0].name);
             }
             this.voiceConnection = voiceConnections[0];
-            this.peer = this.voiceConnection.Client.LoadBalancingPeer;
+            this.peer = this.voiceConnection.Client.RealtimePeer;
             this.debugLostPercent = this.voiceConnection.VoiceClient.DebugLostPercent;
         }
 
@@ -76,8 +75,8 @@ namespace Photon.Voice.Unity.UtilityScripts
 
         private void NetSimWindow(int windowId)
         {
-            GUILayout.Label(string.Format("Rtt:{0,4} +/-{1,3}", this.peer.RoundTripTime,
-                this.peer.RoundTripTimeVariance));
+            GUILayout.Label(string.Format("Rtt:{0,4} +/-{1,3}", this.peer.Stats.RoundtripTime,
+                this.peer.Stats.RoundtripTimeVariance));
 
             bool simEnabled = this.peer.IsSimulationEnabled;
             bool newSimEnabled = GUILayout.Toggle(simEnabled, "Simulate");

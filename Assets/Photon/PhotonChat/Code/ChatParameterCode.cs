@@ -6,10 +6,39 @@
 
 namespace Photon.Chat
 {
+    /// <summary>Class for constants. Codes for parameters of Operations and Events.</summary>
+    /// <remarks>
+    /// Realtime and Chat use the same Name Server operations.
+    /// This partial class contains any values shared with Realtime.
+    /// </remarks>
+    public partial class ChatParameterCode
+    {
+        /// <summary>(224) Your application's ID: a name on your own Photon or a GUID on the Photon Cloud</summary>
+        public const byte ApplicationId = 224;
+        /// <summary>(221) Internally used to establish encryption</summary>
+        public const byte Secret = 221;
+        /// <summary>(220) Version of your application</summary>
+        public const byte AppVersion = 220;
+        /// <summary>(217) This key's (byte) value defines the target custom authentication type/service the client connects with. Used in OpAuthenticate</summary>
+        public const byte ClientAuthenticationType = 217;
+        /// <summary>(216) This key's (string) value provides parameters sent to the custom authentication type/service the client connects with. Used in OpAuthenticate</summary>
+        public const byte ClientAuthenticationParams = 216;
+        /// <summary>(214) This key's (string or byte[]) value provides parameters sent to the custom authentication service setup in Photon Dashboard. Used in OpAuthenticate</summary>
+        public const byte ClientAuthenticationData = 214;
+        /// <summary>(210) Used for region values in OpAuth and OpGetRegions.</summary>
+        public const byte Region = 210;
+        /// <summary>(230) Address of a (game) server to use.</summary>
+        public const byte Address = 230;
+        /// <summary>(225) User's ID</summary>
+        public const byte UserId = 225;
+        /// <summary>(245) Code of "data". Used optionally in an OpAuthenticate response (among other uses).</summary>
+        public const byte Data = (byte)245;
+    }
+
     /// <summary>
     /// Wraps up codes for parameters (in operations and events) used internally in Photon Chat. You don't have to use them directly usually.
     /// </summary>
-    public class ChatParameterCode
+    public partial class ChatParameterCode
     {
         /// <summary>(0) Array of chat channels.</summary>
         public const byte Channels = 0;
@@ -25,14 +54,10 @@ namespace Photon.Chat
         public const byte Sender = 5;
         /// <summary>(6) Not used.</summary>
         public const byte ChannelUserCount = 6;
-        /// <summary>(225) Name of user to send a (private) message to.</summary><remarks>The code is used in LoadBalancing and copied over here.</remarks>
-        public const byte UserId = 225;
         /// <summary>(8) Id of a message.</summary>
         public const byte MsgId = 8;
         /// <summary>(9) Not used.</summary>
         public const byte MsgIds = 9;
-        /// <summary>(221) Secret token to identify an authorized user.</summary><remarks>The code is used in LoadBalancing and copied over here.</remarks>
-        public const byte Secret = 221;
         /// <summary>(15) Subscribe operation result parameter. A bool[] with result per channel.</summary>
         public const byte SubscribeResults = 15;
 
@@ -46,6 +71,8 @@ namespace Photon.Chat
         /// <summary>(14) Number of message to fetch from history. 0: no history. 1 and higher: number of messages in history. -1: all history.</summary>
         public const byte HistoryLength = 14;
 
+
+        /// <summary>(17) Debug string provided by server in some cases.</summary>
         public const byte DebugMessage = 17;
 
         /// <summary>(21) WebFlags object for changing behaviour of webhooks from client.</summary>

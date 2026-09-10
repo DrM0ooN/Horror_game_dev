@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: 70b4b84a1839a3b499f6ea491403ebc4
 timeCreated: 1535385573
-licenseType: Store
+licenseType: Pro
 TextureImporter:
   fileIDToRecycleName: {}
   serializedVersion: 4
@@ -98,10 +98,3 @@ TextureImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 130518
-  packageName: Photon Voice 2
-  packageVersion: 2.63
-  assetPath: Assets/Photon/PhotonVoice/Icons/voice-0512.png
-  uploadId: 868348

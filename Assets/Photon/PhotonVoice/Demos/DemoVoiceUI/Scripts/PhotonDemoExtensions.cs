@@ -1,8 +1,6 @@
 ﻿namespace Photon.Voice.Unity.Demos.DemoVoiceUI
 {
     using Realtime;
-    using ExitGames.Client.Photon;
-
     public static partial class PhotonDemoExtensions // todo: USE C.A.S. ALWAYS
     {
         // this demo uses a Custom Property (as explained in the Realtime API), to sync if a player muted her microphone. that value needs a string key.
@@ -15,12 +13,12 @@
 
         public static bool Mute(this Player player)
         {
-            return player.SetCustomProperties(new Hashtable(1) { { MUTED_KEY, true } });
+            return player.SetCustomProperties(new Client.PhotonHashtable(1) { { MUTED_KEY, true } });
         }
 
         public static bool Unmute(this Player player)
         {
-            return player.SetCustomProperties(new Hashtable(1) { { MUTED_KEY, false } });
+            return player.SetCustomProperties(new Client.PhotonHashtable(1) { { MUTED_KEY, false } });
         }
 
         public static bool IsMuted(this Player player)
@@ -30,28 +28,28 @@
 
         public static bool SetPhotonVAD(this Player player, bool value)
         {
-            return player.SetCustomProperties(new Hashtable(1) { { PHOTON_VAD_KEY, value } });
+            return player.SetCustomProperties(new Client.PhotonHashtable(1) { { PHOTON_VAD_KEY, value } });
         }
-        
+
         public static bool SetWebRTCVAD(this Player player, bool value)
         {
-            return player.SetCustomProperties(new Hashtable(1) { { WEBRTC_VAD_KEY, value } });
+            return player.SetCustomProperties(new Client.PhotonHashtable(1) { { WEBRTC_VAD_KEY, value } });
         }
 
 
         public static bool SetAEC(this Player player, bool value)
         {
-            return player.SetCustomProperties(new Hashtable(1) { { WEBRTC_AEC_KEY, value } });
+            return player.SetCustomProperties(new Client.PhotonHashtable(1) { { WEBRTC_AEC_KEY, value } });
         }
 
         public static bool SetAGC(this Player player, bool agcEnabled, int gain, int level)
         {
-            return player.SetCustomProperties(new Hashtable(1) { { WEBRTC_AGC_KEY, new object[] { agcEnabled, gain,level} } });
+            return player.SetCustomProperties(new Client.PhotonHashtable(1) { { WEBRTC_AGC_KEY, new object[] { agcEnabled, gain,level} } });
         }
 
         public static bool SetMic(this Player player, Recorder.MicType type)
         {
-            return player.SetCustomProperties(new Hashtable(1) { { MIC_KEY, type } } );
+            return player.SetCustomProperties(new Client.PhotonHashtable(1) { { MIC_KEY, type } } );
         }
 
 

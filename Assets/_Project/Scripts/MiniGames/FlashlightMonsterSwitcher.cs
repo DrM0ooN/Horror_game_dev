@@ -1,3 +1,4 @@
+using HorrorGame.Core;
 using UnityEngine;
 
 namespace HorrorGame.MiniGames
@@ -16,9 +17,16 @@ namespace HorrorGame.MiniGames
         [Header("Debug/Integration")]
         [SerializeField] private bool isLitByFlashlight;
 
+        [Header("Debug Visibility")]
+        [Tooltip("Reads from the centralized DebugMode toggle (default hotkey: K) rather than its own flag, so it stays in sync with every other debug-only visual.")]
+        [SerializeField] private MeshRenderer bodyRenderer;
+        [SerializeField] private Material normalMaterial;
+        [SerializeField] private Material debugGlowMaterial;
+
         private float elapsed;
         private float switchInterval;
         private int currentAnchor;
+        private bool isActive;
 
         public bool IsLitByFlashlight => isLitByFlashlight;
 
@@ -29,9 +37,56 @@ namespace HorrorGame.MiniGames
             switchInterval = baseSwitchInterval;
         }
 
+        private void OnEnable()
+        {
+            DebugMode.Changed += ApplyDebugGlowVisibility;
+            ApplyDebugGlowVisibility(DebugMode.IsEnabled);
+        }
+
+        private void OnDisable()
+        {
+            DebugMode.Changed -= ApplyDebugGlowVisibility;
+        }
+
+        private void ApplyDebugGlowVisibility(bool debugEnabled)
+        {
+            if (bodyRenderer == null)
+            {
+                return;
+            }
+
+            var material = debugEnabled ? debugGlowMaterial : normalMaterial;
+            if (material != null)
+            {
+                bodyRenderer.sharedMaterial = material;
+            }
+        }
+
+        /// <summary>
+        /// Snaps back to the configured starting anchor. Called between mini-game attempts so a
+        /// retry starts from a consistent monster position rather than wherever it last was.
+        /// </summary>
+        public void ResetToStartingAnchor()
+        {
+            elapsed = 0f;
+            currentAnchor = Mathf.Clamp(startingAnchorIndex, 0, anchors != null ? anchors.Length - 1 : 0);
+            ApplyAnchor(currentAnchor);
+        }
+
+        /// <summary>
+        /// Gates anchor switching to only while a mini-game session is actually running. Without
+        /// this the monster was observed teleporting between anchors continuously from scene load,
+        /// including while no one had even entered the room yet.
+        /// </summary>
+        public void SetActive(bool active)
+        {
+            isActive = active;
+            elapsed = 0f;
+        }
+
         private void Update()
         {
-            if (anchors == null || anchors.Length < 2)
+            if (!isActive || anchors == null || anchors.Length < 2)
             {
                 return;
             }

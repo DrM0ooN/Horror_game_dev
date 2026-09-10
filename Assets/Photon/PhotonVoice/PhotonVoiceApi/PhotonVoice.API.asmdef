@@ -2,7 +2,7 @@
     "name": "PhotonVoice.API",
     "rootNamespace": "",
     "references": [
-        "PhotonRealtime",
+        "Photon.Realtime",
         "uWindowCapture.Runtime"
     ],
     "includePlatforms": [],

@@ -8,7 +8,6 @@
 // <author>developer@exitgames.com</author>
 // --------------------------------------------------------------------------------------------------------------------
 
-using ExitGames.Client.Photon;
 using UnityEngine;
 
 namespace Photon.Voice.Unity.UtilityScripts
@@ -29,9 +28,6 @@ namespace Photon.Voice.Unity.UtilityScripts
         /// <summary>Shows or hides GUI (does not affect if stats are collected).</summary>
         private bool statsWindowOn = true;
 
-        /// <summary>Option to turn collecting stats on or off (used in Update()).</summary>
-        private bool statsOn = true;
-
         /// <summary>Shows additional "health" values of connection.</summary>
         private bool healthStatsVisible = true;
 
@@ -50,7 +46,7 @@ namespace Photon.Voice.Unity.UtilityScripts
         private int windowId = 200;
 
         /// <summary>The peer currently in use (to set the network simulation).</summary>
-        private PhotonPeer peer;
+        private Client.PhotonPeer peer;
 
         private VoiceConnection voiceConnection;
 
@@ -71,7 +67,9 @@ namespace Photon.Voice.Unity.UtilityScripts
             }
             this.voiceConnection = voiceConnections[0];
             this.voiceClient = this.voiceConnection.VoiceClient;
-            this.peer = this.voiceConnection.Client.LoadBalancingPeer;
+            this.peer = this.voiceConnection.Client.RealtimePeer;
+            this.statsSnapshot = this.peer.Stats.ToSnapshot();
+            this.peer.Stats.ResetMaximumCounters();
             if (this.statsRect.x <= 0)
             {
                 this.statsRect.x = Screen.width - this.statsRect.width;
@@ -84,17 +82,11 @@ namespace Photon.Voice.Unity.UtilityScripts
             if (Input.GetKeyDown(KeyCode.Tab) && Input.GetKey(KeyCode.LeftShift))
             {
                 this.statsWindowOn = !this.statsWindowOn;
-                this.statsOn = true;    // enable stats when showing the window
             }
         }
 
         private void OnGUI()
         {
-            if (this.peer.TrafficStatsEnabled != this.statsOn)
-            {
-                this.peer.TrafficStatsEnabled = this.statsOn;
-            }
-
             if (!this.statsWindowOn)
             {
                 return;
@@ -103,15 +95,12 @@ namespace Photon.Voice.Unity.UtilityScripts
             this.statsRect = GUILayout.Window(this.windowId, this.statsRect, this.TrafficStatsWindow, "Voice Client Messages (shift+tab)");
         }
 
+        Client.TrafficStatsSnapshot statsSnapshot;
+
         private void TrafficStatsWindow(int windowId)
         {
             bool statsToLog = false;
-            TrafficStatsGameLevel gls = this.peer.TrafficStatsGameLevel;
-            long elapsedMs = this.peer.TrafficStatsElapsedMs / 1000;
-            if (elapsedMs == 0)
-            {
-                elapsedMs = 1;
-            }
+            var delta = new Client.TrafficStatsDelta(statsSnapshot, this.peer.Stats.ToSnapshot());
 
             GUILayout.BeginHorizontal();
             this.buttonsOn = GUILayout.Toggle(this.buttonsOn, "buttons");
@@ -120,9 +109,9 @@ namespace Photon.Voice.Unity.UtilityScripts
             this.voiceStatsOn = GUILayout.Toggle(this.voiceStatsOn, "voice stats");
             GUILayout.EndHorizontal();
 
-            string total = string.Format("Out {0,4} | In {1,4} | Sum {2,4}", gls.TotalOutgoingMessageCount, gls.TotalIncomingMessageCount, gls.TotalMessageCount);
-            string elapsedTime = string.Format("{0}sec average:", elapsedMs);
-            string average = string.Format("Out {0,4} | In {1,4} | Sum {2,4}", gls.TotalOutgoingMessageCount / elapsedMs, gls.TotalIncomingMessageCount / elapsedMs, gls.TotalMessageCount / elapsedMs);
+            string total = string.Format("Out {0,4} | In {1,4} | Sum {2,4}", delta.PackagesOut, delta.PackagesIn, delta.PackagesOut + delta.PackagesIn);
+            string elapsedTime = string.Format("{0} sec average:", delta.DeltaTime / 1000);
+            string average = delta.DeltaTime > 0 ? string.Format("Out {0,4} | In {1,4} | Sum {2,4}", delta.PackagesOut * 1000 / delta.DeltaTime, delta.PackagesIn * 1000 / delta.DeltaTime, (delta.PackagesOut + delta.PackagesIn) * 1000 / delta.DeltaTime) : "";
             GUILayout.Label(total);
             GUILayout.Label(elapsedTime);
             GUILayout.Label(average);
@@ -130,25 +119,18 @@ namespace Photon.Voice.Unity.UtilityScripts
             if (this.buttonsOn)
             {
                 GUILayout.BeginHorizontal();
-                this.statsOn = GUILayout.Toggle(this.statsOn, "stats on");
                 if (GUILayout.Button("Reset"))
                 {
-                    this.peer.TrafficStatsReset();
-                    this.peer.TrafficStatsEnabled = true;
+                    this.statsSnapshot = this.peer.Stats.ToSnapshot();
+                    this.peer.Stats.ResetMaximumCounters();
                 }
                 statsToLog = GUILayout.Button("To Log");
                 GUILayout.EndHorizontal();
             }
 
-            string trafficStatsIn = string.Empty;
-            string trafficStatsOut = string.Empty;
             if (this.trafficStatsOn)
             {
-                GUILayout.Box("Voice Client Traffic Stats");
-                trafficStatsIn = string.Concat("Incoming: \n", this.peer.TrafficStatsIncoming);
-                trafficStatsOut = string.Concat("Outgoing: \n", this.peer.TrafficStatsOutgoing);
-                GUILayout.Label(trafficStatsIn);
-                GUILayout.Label(trafficStatsOut);
+                GUILayout.Label(delta.ToString(true, true, true));
             }
 
             string healthStats = string.Empty;
@@ -156,18 +138,14 @@ namespace Photon.Voice.Unity.UtilityScripts
             {
                 GUILayout.Box("Voice Client Health Stats");
                 healthStats = string.Format(
-                    "ping: {6}|{9}[+/-{7}|{10}]ms resent:{8} \n\nmax ms between\nsend: {0,4} \ndispatch: {1,4} \n\nlongest dispatch for: \nev({3}):{2,3}ms \nop({5}):{4,3}ms",
-                    gls.LongestDeltaBetweenSending,
-                    gls.LongestDeltaBetweenDispatching,
-                    gls.LongestEventCallback,
-                    gls.LongestEventCallbackCode,
-                    gls.LongestOpResponseCallback,
-                    gls.LongestOpResponseCallbackOpCode,
-                    this.peer.RoundTripTime,
-                    this.peer.RoundTripTimeVariance,
-                    this.peer.ResentReliableCommands,
+                    "ping: {0}|{1}[+/-{2}|{3}]ms resent:{4} \n\nmax ms between\nsend: {5,4} \ndispatch: {6,4}",
+                    this.peer.Stats.RoundtripTime,
                     this.voiceClient.RoundTripTime,
-                    this.voiceClient.RoundTripTimeVariance);
+                    this.peer.Stats.RoundtripTimeVariance,
+                    this.voiceClient.RoundTripTimeVariance,
+                    delta.UdpReliableCommandsResent,
+                    this.peer.Stats.LongestDeltaBetweenSendOutgoingCalls,
+                    this.peer.Stats.LongestDeltaBetweenDispatchCalls);
                 GUILayout.Label(healthStats);
             }
 
@@ -190,7 +168,7 @@ namespace Photon.Voice.Unity.UtilityScripts
 
             if (statsToLog)
             {
-                string complete = string.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}", total, elapsedTime, average, trafficStatsIn, trafficStatsOut, healthStats);
+                string complete = string.Format("{0}\n{1}\n{2}\n{3}\n{4}", total, elapsedTime, average, this.peer.Stats.ToString(), healthStats);
                 Debug.Log(complete);
             }
 

@@ -105,3 +105,12 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Photon App ID settings — contain secret App IDs (Fusion + Voice), never commit.
+# Each teammate/CI machine must generate these locally via Tools/Fusion/Realtime Settings
+# (auto-creates the asset) and enter their own copy of the App IDs; distribute the IDs
+# out-of-band (not via git). See docs/PROJECT_BRIEF.md Section 9 for details.
+/Assets/Photon/Fusion/Resources/PhotonAppSettings.asset
+/Assets/Photon/Fusion/Resources/PhotonAppSettings.asset.meta
+/Assets/Photon/PhotonVoice/Resources/VoiceAppSettings.asset
+/Assets/Photon/PhotonVoice/Resources/VoiceAppSettings.asset.meta

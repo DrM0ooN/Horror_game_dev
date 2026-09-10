@@ -6,9 +6,12 @@
 
 namespace Photon.Chat
 {
+    /// <summary>Key codes for well known properties.</summary>
     public class ChannelWellKnownProperties
     {
+        /// <summary>Maximum subscribers allowed for a channel.</summary>
         public const byte MaxSubscribers = 255;
+        /// <summary>The server will publish subscriber userIDs of this channel, if true.</summary>
         public const byte PublishSubscribers = 254;
     }
 }

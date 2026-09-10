@@ -1,7 +1,7 @@
 {
     "name": "PhotonVoice.Utilities.Editor",
     "references": [
-        "PhotonRealtime",
+        "Photon.Realtime",
         "PhotonVoice"
     ],
     "optionalUnityReferences": [],

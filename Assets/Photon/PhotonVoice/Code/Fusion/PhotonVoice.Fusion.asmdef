@@ -3,7 +3,7 @@
     "rootNamespace": "",
     "references": [
         "PhotonVoice",
-        "PhotonRealtime",
+        "Photon.Realtime",
         "PhotonVoice.API"
     ],
     "includePlatforms": [],

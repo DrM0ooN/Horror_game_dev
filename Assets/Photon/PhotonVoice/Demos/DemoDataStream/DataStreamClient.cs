@@ -32,7 +32,7 @@ namespace DataStreamDemo
         }
 
         public VoiceClient VoiceClient => lbt.VoiceClient;
-        LoadBalancingTransport lbt;
+        Realtime5Transport2 lbt;
 
         protected Photon.Voice.Unity.Logger logger = new Photon.Voice.Unity.Logger();
 
@@ -40,19 +40,17 @@ namespace DataStreamDemo
         {
 
             logger.Level = LogLevel;
-            lbt = new LoadBalancingTransport2(logger);
+            lbt = new Realtime5Transport2(logger);
 
-            lbt.LoadBalancingPeer.DebugOut = DebugLevel.INFO;
-            lbt.LoadBalancingPeer.TrafficStatsEnabled = true;
-            lbt.AppId = AppId;
-            lbt.AppVersion = AppVersion;
+            lbt.RealtimePeer.LogLevel = Photon.Client.LogLevel.Info;
+
             lbt.StateChanged += (ClientState stateOld, ClientState s) =>
             {
                 logger.Log(LogLevel.Info, $"LBC: state: {s}");
                 switch (s)
                 {
                     case ClientState.ConnectedToMasterServer:
-                        lbt.OpJoinRandomOrCreateRoom(null, new EnterRoomParams()
+                        lbt.OpJoinRandomOrCreateRoom(null, new EnterRoomArgs()
                         {
                             RoomName = RoomName,
                             RoomOptions = new RoomOptions() { MaxPlayers = 5 } // the UI limits the number of incoming video streams to 4
@@ -105,7 +103,11 @@ namespace DataStreamDemo
 
         public void Connect()
         {
-            lbt.ConnectToRegionMaster(Region);
+            lbt.ConnectUsingSettings(new AppSettings()
+            {
+                AppIdVoice = AppId,
+                FixedRegion = Region,
+            });
         }
 
         public void Disconnect()

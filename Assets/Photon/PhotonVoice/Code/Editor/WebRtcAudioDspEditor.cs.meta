@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: 82948294db79e4c318c9b8815781f0d3
 timeCreated: 1538475591
-licenseType: Store
+licenseType: Free
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
@@ -11,10 +11,3 @@ MonoImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 130518
-  packageName: Photon Voice 2
-  packageVersion: 2.63
-  assetPath: Assets/Photon/PhotonVoice/Code/Editor/WebRtcAudioDspEditor.cs
-  uploadId: 868348

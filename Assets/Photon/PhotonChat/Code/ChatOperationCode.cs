@@ -13,6 +13,9 @@ namespace Photon.Chat
     {
         /// <summary>(230) Operation Authenticate.</summary>
         public const byte Authenticate = 230;
+        
+        /// <summary>(231) Authenticates this peer and connects to a virtual application</summary>
+        public const byte AuthenticateOnce = 231;
 
         /// <summary>(0) Operation to subscribe to chat channels.</summary>
         public const byte Subscribe = 0;

@@ -2,6 +2,13 @@ using System.Collections.Generic;
 using HorrorGame.Player;
 using UnityEngine;
 
+#if FUSION_WEAVER
+using Fusion;
+using PlayerRefType = Fusion.PlayerRef;
+#else
+using PlayerRefType = System.Int32;
+#endif
+
 namespace HorrorGame.Core
 {
     /// <summary>
@@ -17,6 +24,7 @@ namespace HorrorGame.Core
         [SerializeField] private RoomDoorController doorController;
         [SerializeField] private MonoBehaviour miniGameBehaviour;
         [SerializeField] private HubThreatSystem hubThreatSystem;
+        [SerializeField] private MiniGameProgressSystem progressSystem;
         [SerializeField] private Transform[] hubRespawnPoints;
 
         private readonly HashSet<RoomPlayerMarker> playersInside = new HashSet<RoomPlayerMarker>();
@@ -150,6 +158,11 @@ private void OnMiniGameSolved()
 
             NotificationHud.Toast("Room solved!");
 
+            if (progressSystem != null)
+            {
+                progressSystem.RoomSolved();
+            }
+
             RespawnPlayersToHub();
             RemoveFlashlights();
             playersInside.Clear();
@@ -158,10 +171,15 @@ private void OnMiniGameSolved()
 
         private void OnMiniGameFailed()
         {
-            LifecycleState = RoomLifecycleState.FailedLocked;
+            // Retryable for testing: rooms used to stay permanently FailedLocked/ClosedFailed on a
+            // fail, but that meant a full scene rebuild was needed to try again. Reopening the door
+            // and returning to IdleExplorable lets players walk back in and press the start button
+            // for another attempt -- TryStartChallenge already re-calls miniGame.OnPlayersEntered(),
+            // which resets fragments/timer/exposure, so no extra reset plumbing is needed there.
+            LifecycleState = RoomLifecycleState.IdleExplorable;
             if (doorController != null)
             {
-                doorController.SetDoorState(RoomDoorState.ClosedFailed);
+                doorController.SetDoorState(RoomDoorState.Open);
             }
 
             if (hubThreatSystem != null)
@@ -197,12 +215,16 @@ private void OnMiniGameSolved()
             }
         }
 
-        private static List<int> BuildPlayerRefs(List<RoomPlayerMarker> players)
+        private static List<PlayerRefType> BuildPlayerRefs(List<RoomPlayerMarker> players)
         {
-            var refs = new List<int>(players.Count);
+            var refs = new List<PlayerRefType>(players.Count);
             for (var i = 0; i < players.Count; i++)
             {
+#if FUSION_WEAVER
+                refs.Add(PlayerRef.FromIndex(players[i].PlayerId));
+#else
                 refs.Add(players[i].PlayerId);
+#endif
             }
 
             return refs;

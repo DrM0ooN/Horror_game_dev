@@ -30,7 +30,7 @@ namespace Photon.Voice.Unity
         [field: SerializeField]
         public bool UseVoiceAppSettings = false;
 
-        protected virtual void Start()
+        protected override void Start()
         {
             if (this.PrimaryRecorder != null)
             {
@@ -79,9 +79,7 @@ namespace Photon.Voice.Unity
         /// <summary>Key to save the "Best Region Summary" in the Player Preferences.</summary>
         private const string PlayerPrefsKey = "VoiceCloudBestRegion";
 
-        private LoadBalancingTransport client;
-
-        private SupportLogger supportLoggerComponent;
+        private Realtime5Transport client;
 
         [SerializeField]
         private bool runInBackground = true;
@@ -135,9 +133,9 @@ namespace Photon.Voice.Unity
         private void Init()
         {
 #if PHOTON_VOICE_PLUGIN_ENABLE
-            this.client = new VoicePluginTransport(this.Logger, ConnectionProtocol.Udp, cppCompatibilityMode);
+            this.client = new VoicePluginTransport(this.Logger, Photon.Client.ConnectionProtocol.Udp, cppCompatibilityMode);
 #else
-            this.client = new LoadBalancingTransport2(this.Logger, ConnectionProtocol.Udp, cppCompatibilityMode);
+            this.client = new Realtime5Transport2(this.Logger, Photon.Client.ConnectionProtocol.Udp, cppCompatibilityMode);
 #endif
             this.client.VoiceClient.OnRemoteVoiceInfoAction += this.OnRemoteVoiceInfo;
             this.client.StateChanged += this.OnVoiceStateChanged;
@@ -145,7 +143,7 @@ namespace Photon.Voice.Unity
             base.Client = this.client;
             this.StartFallbackSendAckThread();
 #if UNITY_WEBGL && !UNITY_EDITOR
-            this.timerWorker = new TimerWorker(() => { while (this.client.LoadBalancingPeer.DispatchIncomingCommands()) ; }, 50);
+            this.timerWorker = new TimerWorker(() => { while (this.client.RealtimePeer.DispatchIncomingCommands()) ; }, 50);
 #endif
         }
 
@@ -179,7 +177,7 @@ namespace Photon.Voice.Unity
         // to set logging level from code
         public VoiceLogger VoiceLogger => voiceComponentImpl.VoiceLogger;
 
-        public new LoadBalancingTransport Client { get { return this.client; } }
+        public new Realtime5Transport Client { get { return this.client; } }
 
         /// <summary>Returns underlying Photon Voice client.</summary>
         public VoiceClient VoiceClient { get { return this.Client.VoiceClient; } }
@@ -253,9 +251,9 @@ namespace Photon.Voice.Unity
         /// <returns>If true voice connection command was sent from client</returns>
         public virtual bool ConnectUsingSettings(AppSettings overwriteSettings = null)
         {
-            if (this.Client.LoadBalancingPeer.PeerState != PeerStateValue.Disconnected)
+            if (this.Client.RealtimePeer.PeerState != Photon.Client.PeerStateValue.Disconnected)
             {
-                this.Logger.Log(LogLevel.Warning, "ConnectUsingSettings() failed. Can only connect while in state 'Disconnected'. Current state: {0}", this.Client.LoadBalancingPeer.PeerState);
+                this.Logger.Log(LogLevel.Warning, "ConnectUsingSettings() failed. Can only connect while in state 'Disconnected'. Current state: {0}", this.Client.RealtimePeer.PeerState);
                 return false;
             }
             if (overwriteSettings != null)
@@ -307,28 +305,24 @@ namespace Photon.Voice.Unity
         }
 
 #endregion
+        /// <summary>Keeps the component, even if a new scene gets loaded.</summary>
+        public bool ApplyDontDestroyOnLoad = true;
 
 #region Private Methods
 
-        protected override void Awake()
+        protected virtual void Awake()
         {
-            base.Awake();
             voiceComponentImpl.Awake(this);
 
             Init();
 
             if (this.ApplyDontDestroyOnLoad)
             {
+                DontDestroyOnLoad(this.gameObject);
                 // also apply to the relevant VoiceLogger
                 DontDestroyOnLoad(voiceComponentImpl.VoiceLogger.gameObject);
             }
 
-            this.supportLoggerComponent = this.GetComponent<SupportLogger>();
-            if (this.supportLoggerComponent != null)
-            {
-                this.supportLoggerComponent.Client = this.Client;
-                this.supportLoggerComponent.LogTrafficStats = true;
-            }
             if (this.runInBackground)
             {
                 Application.runInBackground = this.runInBackground;
@@ -361,10 +355,9 @@ namespace Photon.Voice.Unity
             this.client.StateChanged -= this.OnVoiceStateChanged;
             this.client.OpResponseReceived -= this.OnOperationResponseReceived;
             this.client.Disconnect();
-            if (this.client.LoadBalancingPeer != null)
+            if (this.client.RealtimePeer != null)
             {
-                this.client.LoadBalancingPeer.Disconnect();
-                this.client.LoadBalancingPeer.StopThread();
+                this.client.Disconnect();
             }
             this.client.Dispose();
         }
@@ -585,7 +578,7 @@ namespace Photon.Voice.Unity
             }
         }
 
-        protected virtual void OnOperationResponseReceived(OperationResponse operationResponse)
+        protected virtual void OnOperationResponseReceived(Client.OperationResponse operationResponse)
         {
             if (operationResponse.ReturnCode != ErrorCode.Ok && (operationResponse.OperationCode != OperationCode.JoinRandomGame || operationResponse.ReturnCode == ErrorCode.NoRandomMatchFound))
             {

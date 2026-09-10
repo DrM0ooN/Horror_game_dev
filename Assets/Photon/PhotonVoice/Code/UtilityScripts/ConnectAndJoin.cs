@@ -32,7 +32,7 @@ namespace Photon.Voice.Unity.UtilityScripts
 
         public string RoomName;
 
-        private readonly EnterRoomParams enterRoomParams = new EnterRoomParams
+        private readonly EnterRoomArgs enterRoomParams = new EnterRoomArgs
         {
             RoomOptions = new RoomOptions()
         };
@@ -110,7 +110,7 @@ namespace Photon.Voice.Unity.UtilityScripts
             if (this.RandomRoom)
             {
                 this.enterRoomParams.RoomName = null;
-                this.voiceConnection.Client.OpJoinRandomOrCreateRoom(new OpJoinRandomRoomParams(), this.enterRoomParams);
+                this.voiceConnection.Client.OpJoinRandomOrCreateRoom(new JoinRandomRoomArgs(), this.enterRoomParams);
             }
             else
             {

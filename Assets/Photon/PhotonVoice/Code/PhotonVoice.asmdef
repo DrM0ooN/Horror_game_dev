@@ -1,7 +1,7 @@
 {
     "name": "PhotonVoice",
     "references": [
-        "PhotonRealtime",
+        "Photon.Realtime",
         "PhotonVoice.API"
     ],
     "optionalUnityReferences": [],
