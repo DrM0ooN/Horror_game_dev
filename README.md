@@ -5,6 +5,9 @@ A first-person, 4-player co-op horror game built in Unity. Players spawn in a ce
 Status: early vertical slice, actively in development. Movement, one full room loop from start to solve or fail to respawn, and the first mini-game are working in single-player. Multiplayer networking is not wired in yet.
 
 ## Screenshot
+<img width="1379" height="781" alt="image" src="https://github.com/user-attachments/assets/af772172-5a15-4858-bb58-0eee9419ef72" />
+
+<img width="1388" height="774" alt="image" src="https://github.com/user-attachments/assets/08e2306c-1faa-4a84-81af-f40171047ebb" />
 
 Add a shot or short clip from the Editor here.
 
