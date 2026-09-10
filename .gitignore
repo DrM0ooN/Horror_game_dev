@@ -114,3 +114,10 @@ InitTestScene*.unity*
 /Assets/Photon/Fusion/Resources/PhotonAppSettings.asset.meta
 /Assets/Photon/PhotonVoice/Resources/VoiceAppSettings.asset
 /Assets/Photon/PhotonVoice/Resources/VoiceAppSettings.asset.meta
+
+# AI tooling and internal dev notes, not part of the public project
+CLAUDE.md
+GEMINI.md
+todo.md
+.mcp.json
+docs/PROJECT_BRIEF.md
