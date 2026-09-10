@@ -9,7 +9,6 @@ Status: early vertical slice, actively in development. Movement, one full room l
 
 <img width="1388" height="774" alt="image" src="https://github.com/user-attachments/assets/08e2306c-1faa-4a84-81af-f40171047ebb" />
 
-Add a shot or short clip from the Editor here.
 
 ## Current features
 
